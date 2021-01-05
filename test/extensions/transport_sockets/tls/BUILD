@@ -43,6 +43,7 @@ envoy_cc_test(
         "//source/common/stream_info:stream_info_lib",
         "//source/extensions/transport_sockets/tls:context_config_lib",
         "//source/extensions/transport_sockets/tls:context_lib",
+        "//source/extensions/transport_sockets/tls:openssl_impl_lib",
         "//source/extensions/transport_sockets/tls:ssl_socket_lib",
         "//source/extensions/transport_sockets/tls:utility_lib",
         "//source/extensions/transport_sockets/tls/private_key:private_key_manager_lib",
@@ -125,7 +126,10 @@ envoy_cc_test(
         "//test/extensions/transport_sockets/tls/ocsp:gen_ocsp_data",
         "//test/extensions/transport_sockets/tls/test_data:certs",
     ],
-    external_deps = ["ssl"],
+    external_deps = [
+        "ssl",
+        "bssl_wrapper_lib",
+    ],
     deps = [
         ":ssl_test_utils",
         "//source/extensions/transport_sockets/tls:utility_lib",

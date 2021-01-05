@@ -9,6 +9,7 @@ load(":crates.bzl", "raze_fetch_remote_crates")
 PPC_SKIP_TARGETS = ["envoy.filters.http.lua"]
 
 WINDOWS_SKIP_TARGETS = [
+    "envoy.filters.http.lua",
     "envoy.tracers.dynamic_ot",
     "envoy.tracers.lightstep",
     "envoy.tracers.datadog",
@@ -39,7 +40,7 @@ def _repository_locations():
         locations[key] = mutable_location
 
         if "sha256" not in location or len(location["sha256"]) == 0:
-            _fail_missing_attribute("sha256", key)
+            fail("SHA256 missing for external dependency " + str(location["urls"]))
 
         if "project_name" not in location:
             _fail_missing_attribute("project_name", key)
@@ -60,7 +61,7 @@ def _repository_locations():
         mutable_location.pop("version")
 
         if "use_category" not in location:
-            _fail_missing_attribute("use_category", key)
+            fail("The 'use_category' attribute must be defined for external dependecy " + str(location["urls"]))
         use_category = mutable_location.pop("use_category")
 
         if "dataplane_ext" in use_category or "observability_ext" in use_category:
@@ -84,7 +85,7 @@ def _repository_locations():
             if cpe_matches:
                 fail("CPE must match cpe:2.3:a:<facet>:<facet>:*: " + cpe)
         elif not [category for category in USE_CATEGORIES_WITH_CPE_OPTIONAL if category in location["use_category"]]:
-            _fail_missing_attribute("cpe", key)
+            fail("The 'cpe' attribute must be defined for external dependecy " + str(location["urls"]))
 
         for category in location["use_category"]:
             if category not in USE_CATEGORIES:
@@ -124,6 +125,26 @@ _default_envoy_build_config = repository_rule(
 # Python dependencies.
 def _python_deps():
     # TODO(htuch): convert these to pip3_import.
+    _repository_impl(
+        name = "com_github_pallets_markupsafe",
+        build_file = "@envoy//bazel/external:markupsafe.BUILD",
+    )
+    native.bind(
+        name = "markupsafe",
+        actual = "@com_github_pallets_markupsafe//:markupsafe",
+    )
+    _repository_impl(
+        name = "com_github_pallets_jinja",
+        build_file = "@envoy//bazel/external:jinja.BUILD",
+    )
+    native.bind(
+        name = "jinja2",
+        actual = "@com_github_pallets_jinja//:jinja2",
+    )
+    _repository_impl(
+        name = "com_github_apache_thrift",
+        build_file = "@envoy//bazel/external:apache_thrift.BUILD",
+    )
     _repository_impl(
         name = "com_github_twitter_common_lang",
         build_file = "@envoy//bazel/external:twitter_common_lang.BUILD",
@@ -184,12 +205,13 @@ def envoy_dependencies(skip_targets = []):
     # Binding to an alias pointing to the selected version of BoringSSL:
     # - BoringSSL FIPS from @boringssl_fips//:ssl,
     # - non-FIPS BoringSSL from @boringssl//:ssl.
-    _boringssl()
-    _boringssl_fips()
-    native.bind(
-        name = "ssl",
-        actual = "@envoy//bazel:boringssl",
-    )
+
+    # EXTERNAL OPENSSL
+    _openssl()
+    _openssl_includes()
+    _bssl_wrapper()
+    _openssl_cbs()
+
 
     # The long repo names (`com_github_fmtlib_fmt` instead of `fmtlib`) are
     # semi-standard in the Bazel community, intended to avoid both duplicate
@@ -266,23 +288,44 @@ def envoy_dependencies(skip_targets = []):
         actual = "@bazel_tools//tools/cpp/runfiles",
     )
 
-def _boringssl():
+#EXTERNAL OPENSSL
+def _openssl():
+    native.bind(
+        name = "ssl",
+        actual = "@openssl//:openssl-lib",
+)
+
+def _openssl_includes():
     _repository_impl(
-        name = "boringssl",
+        name = "com_github_openssl_openssl",
+        build_file = "@envoy//bazel/external:openssl_includes.BUILD",
+        patches = [
+            "@envoy//bazel/external:openssl_includes-1.patch",
+        ],
         patch_args = ["-p1"],
-        patches = ["@envoy//bazel:boringssl_static.patch"],
+    )
+    native.bind(
+        name = "openssl_includes_lib",
+        actual = "@com_github_openssl_openssl//:openssl_includes_lib",
+)
+
+
+#EXTERNAL OPENSSL
+def _bssl_wrapper():
+    _repository_impl("bssl_wrapper")
+    native.bind(
+        name = "bssl_wrapper_lib",
+        actual = "@bssl_wrapper//:bssl_wrapper_lib",
     )
 
-def _boringssl_fips():
-    location = REPOSITORY_LOCATIONS["boringssl_fips"]
-    genrule_repository(
-        name = "boringssl_fips",
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        genrule_cmd_file = "@envoy//bazel/external:boringssl_fips.genrule_cmd",
-        build_file = "@envoy//bazel/external:boringssl_fips.BUILD",
-        patches = ["@envoy//bazel/external:boringssl_fips.patch"],
+#EXTERNAL OPENSSL
+def _openssl_cbs():
+    _repository_impl("openssl_cbs")
+    native.bind(
+        name = "openssl_cbs_lib",
+        actual = "@openssl_cbs//:openssl_cbs_lib",
     )
+
 
 def _com_github_circonus_labs_libcircllhist():
     _repository_impl(
@@ -380,12 +423,15 @@ def _com_github_google_libprotobuf_mutator():
     )
 
 def _com_github_jbeder_yaml_cpp():
-    _repository_impl(
+    location = _get_location("com_github_jbeder_yaml_cpp")
+    http_archive(
         name = "com_github_jbeder_yaml_cpp",
+        build_file_content = BUILD_ALL_CONTENT,
+        **location
     )
     native.bind(
         name = "yaml_cpp",
-        actual = "@com_github_jbeder_yaml_cpp//:yaml-cpp",
+        actual = "@envoy//bazel/foreign_cc:yaml",
     )
 
 def _com_github_libevent_libevent():
@@ -747,6 +793,8 @@ def _com_github_curl():
         build_file_content = BUILD_ALL_CONTENT + """
 cc_library(name = "curl", visibility = ["//visibility:public"], deps = ["@envoy//bazel/foreign_cc:curl"])
 """,
+        patches = ["@envoy//bazel/foreign_cc:curl-revert-cmake-minreqver.patch"],
+        patch_args = ["-p1"],
         **location
     )
     native.bind(
@@ -942,6 +990,7 @@ def _com_github_gperftools_gperftools():
     http_archive(
         name = "com_github_gperftools_gperftools",
         build_file_content = BUILD_ALL_CONTENT,
+        patch_cmds = ["./autogen.sh"],
         **location
     )
 

@@ -73,6 +73,7 @@ envoy_cc_library(
         "abseil_optional",
         "abseil_synchronization",
         "ssl",
+        "bssl_wrapper_lib",
     ],
     # TLS is core functionality.
     visibility = ["//visibility:public"],
@@ -140,10 +141,12 @@ envoy_cc_library(
         "abseil_node_hash_set",
         "abseil_synchronization",
         "ssl",
+        "bssl_wrapper_lib",
     ],
     # TLS is core functionality.
     visibility = ["//visibility:public"],
     deps = [
+        ":openssl_impl_lib",
         ":utility_lib",
         "//include/envoy/ssl:context_config_interface",
         "//include/envoy/ssl:context_interface",
@@ -174,10 +177,26 @@ envoy_cc_library(
     hdrs = ["utility.h"],
     external_deps = [
         "ssl",
+        "bssl_wrapper_lib",
     ],
     deps = [
+        ":openssl_impl_lib",
         "//source/common/common:assert_lib",
         "//source/common/common:utility_lib",
         "//source/common/network:address_lib",
+    ],
+)
+
+envoy_cc_library(
+    name = "openssl_impl_lib",
+    srcs = [
+        "openssl_impl.cc",
+    ],
+    hdrs = [
+        "openssl_impl.h",
+    ],
+    external_deps = [
+        "ssl",
+        "bssl_wrapper_lib",
     ],
 )

@@ -18,9 +18,12 @@
 #include "common/stats/symbol_table_impl.h"
 
 #include "extensions/transport_sockets/tls/context_manager_impl.h"
+#include "extensions/transport_sockets/tls/openssl_impl.h"
 #include "extensions/transport_sockets/tls/ocsp/ocsp.h"
 
 #include "absl/synchronization/mutex.h"
+#include "absl/types/optional.h"
+#include "bssl_wrapper/bssl_wrapper.h"
 #include "openssl/ssl.h"
 #include "openssl/x509v3.h"
 
@@ -190,11 +193,10 @@ protected:
     }
   };
 
-  // This is always non-empty, with the first context used for all new SSL
-  // objects. For server contexts, once we have ClientHello, we
-  // potentially switch to a different CertificateContext based on certificate
-  // selection.
-  std::vector<TlsContext> tls_contexts_;
+  // Use a single context for certificates instead of one context per certificate as in the BoringSSL case.
+  // A single context is required to hold all certificates for OpenSSL.
+  // The use of certificate selection is handled by OpenSSL.
+  TlsContext tls_context_;
   bool verify_trusted_ca_{false};
   std::vector<std::string> verify_subject_alt_name_list_;
   std::vector<Matchers::StringMatcherImpl> subject_alt_name_matchers_;

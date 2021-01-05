@@ -1797,6 +1797,8 @@ TEST_F(ServerContextConfigImplTest, PrivateKeyMethodLoadFailureNoProvider) {
       "Failed to load incomplete certificate from ");
 }
 
+// TODO (dmitri-d) we do not support key providers under OpenSSL atm.
+/*
 TEST_F(ServerContextConfigImplTest, PrivateKeyMethodLoadFailureNoMethod) {
   envoy::extensions::transport_sockets::tls::v3::DownstreamTlsContext tls_context;
   tls_context.mutable_common_tls_context()->add_tls_certificates();
@@ -1831,6 +1833,7 @@ TEST_F(ServerContextConfigImplTest, PrivateKeyMethodLoadFailureNoMethod) {
           manager.createSslServerContext(store, server_context_config, std::vector<std::string>{})),
       EnvoyException, "Failed to get BoringSSL private key method from provider");
 }
+*/
 
 TEST_F(ServerContextConfigImplTest, PrivateKeyMethodLoadSuccess) {
   envoy::extensions::transport_sockets::tls::v3::DownstreamTlsContext tls_context;
