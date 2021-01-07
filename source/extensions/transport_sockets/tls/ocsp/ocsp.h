@@ -9,8 +9,8 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
-#include "openssl/bytestring.h"
 #include "openssl/ssl.h"
+#include "cbs.h"
 
 /**
  * Data structures and functions for unmarshaling OCSP responses

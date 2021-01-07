@@ -6,6 +6,8 @@
 #include "openssl/bio.h"
 #include "openssl/err.h"
 
+#include "crypto/bio/bio_lcl.h"
+
 namespace Envoy {
 namespace Extensions {
 namespace TransportSockets {

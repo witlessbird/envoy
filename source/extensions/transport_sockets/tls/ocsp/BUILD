@@ -26,6 +26,9 @@ envoy_cc_library(
     srcs = ["asn1_utility.cc"],
     hdrs = ["asn1_utility.h"],
     repository = "",
+    external_deps = [
+      "openssl_cbs_lib",
+    ],
     deps = [
         "//include/envoy/common:time_interface",
         "//include/envoy/ssl:context_config_interface",
