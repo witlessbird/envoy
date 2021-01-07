@@ -11,7 +11,6 @@
 startup --host_jvm_args=-Xmx2g
 
 build --workspace_status_command="bash bazel/get_workspace_status"
-build --experimental_local_memory_estimate
 build --experimental_strict_action_env=true
 build --host_force_python=PY3
 build --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
@@ -55,8 +54,6 @@ build:asan --define ENVOY_CONFIG_ASAN=1
 build:asan --copt -fsanitize=address,undefined
 build:asan --linkopt -fsanitize=address,undefined
 # vptr and function sanitizer are enabled in clang-asan if it is set up via bazel/setup_clang.sh.
-# TODO(lizan): vptr and function requires C++ UBSAN runtime which we're not currently linking to.
-# Enable them when bazel has better support for that or with explicit linker options.
 build:asan --copt -fno-sanitize=vptr,function
 build:asan --linkopt -fno-sanitize=vptr,function
 build:asan --copt -DADDRESS_SANITIZER=1
@@ -144,13 +141,10 @@ build:coverage --collect_code_coverage
 build:coverage --test_tag_filters=-nocoverage
 build:coverage --instrumentation_filter="//source(?!/common/chromium_url|/extensions/quic_listeners/quiche/platform)[/:],//include[/:]"
 coverage:test-coverage --test_arg="-l trace"
-# TODO m2p : Because of Issue #11903 Check asan-fuzzer (maistra-2.0) or plain-fuzzer
 coverage:fuzz-coverage --config=plain-fuzzer
 coverage:fuzz-coverage --run_under=@envoy//bazel/coverage:fuzz_coverage_wrapper.sh
 
 # Remote execution: https://docs.bazel.build/versions/master/remote-execution.html
-build:rbe-toolchain --host_platform=@envoy_build_tools//toolchains:rbe_ubuntu_clang_platform
-build:rbe-toolchain --platforms=@envoy_build_tools//toolchains:rbe_ubuntu_clang_platform
 build:rbe-toolchain --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 
 build:rbe-toolchain-clang --config=rbe-toolchain
@@ -234,7 +228,7 @@ build:remote-clang-cl --config=rbe-toolchain-clang-cl
 
 # Docker sandbox
 # NOTE: Update this from https://github.com/envoyproxy/envoy-build-tools/blob/master/toolchains/rbe_toolchains_config.bzl#L8
-build:docker-sandbox --experimental_docker_image=envoyproxy/envoy-build-ubuntu:f21773ab398a879f976936f72c78c9dd3718ca1e
+build:docker-sandbox --experimental_docker_image=envoyproxy/envoy-build-ubuntu:b480535e8423b5fd7c102fd30c92f4785519e33a
 build:docker-sandbox --spawn_strategy=docker
 build:docker-sandbox --strategy=Javac=docker
 build:docker-sandbox --strategy=Closure=docker
@@ -269,7 +263,7 @@ build:remote-ci --remote_executor=grpcs://remotebuildexecution.googleapis.com
 # rules for fuzz tests. Passing it in the CLI will cause dependencies to be build
 # with the macro. Causing issues in RouteMatcherTest.TestRoutes that expect prod
 # behavior from RE2 library.
-build:asan-fuzzer --config=clang-asan
+build:asan-fuzzer --config=asan
 build:asan-fuzzer --define=FUZZING_ENGINE=libfuzzer
 build:asan-fuzzer --copt=-fsanitize=fuzzer-no-link
 build:asan-fuzzer --copt=-fno-omit-frame-pointer
@@ -283,11 +277,7 @@ build:plain-fuzzer --copt=-fsanitize=fuzzer-no-link
 build:plain-fuzzer --linkopt=-fsanitize=fuzzer-no-link
 
 # Compile database generation config
-# We don't care about built binaries so always strip and use fastbuild.
-build:compdb -c fastbuild
-build:compdb --strip=always
 build:compdb --build_tag_filters=-nocompdb
-build:compdb --define=ENVOY_CONFIG_COMPILATION_DATABASE=1
 
 # Windows build quirks
 build:windows --action_env=TMPDIR
@@ -334,14 +324,3 @@ build:windows --dynamic_mode=off
 try-import %workspace%/clang.bazelrc
 try-import %workspace%/user.bazelrc
 try-import %workspace%/local_tsan.bazelrc
-
-build --cxxopt -D_GLIBCXX_USE_CXX11_ABI=1
-build --cxxopt -DENVOY_IGNORE_GLIBCXX_USE_CXX11_ABI_ERROR=1
-build --cxxopt -Wnon-virtual-dtor
-build --cxxopt -Wformat
-build --cxxopt -Wformat-security
-build --cxxopt -Wno-error=deprecated-declarations
-build --cxxopt -Wno-error=unused-variable
-build --cxxopt -w
-build --cxxopt -ldl
-build --copt -DOPENSSL_IS_BORINGSSL=0

@@ -1512,10 +1512,7 @@ TEST_P(SslSocketTest, X509ExtensionsCertificateSerialNumber) {
 )EOF";
 
   TestUtilOptions test_options(client_ctx_yaml, server_ctx_yaml, true, GetParam());
-  testUtil(test_options.addExpected509Extension("1.2.3.4.5.6.7.8", absl::make_optional("Something"))
-               .addExpected509Extension("1.2.3.4.5.6.7.9", "\x1\x1\xFF")
-               .addExpected509Extension("1.2.3.4", absl::nullopt)
-               .setExpectedSerialNumber(TEST_EXTENSIONS_CERT_SERIAL));
+  testUtil(test_options.setExpectedSerialNumber(TEST_EXTENSIONS_CERT_SERIAL));
 }
 
 // By default, expired certificates are not permitted.

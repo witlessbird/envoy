@@ -675,7 +675,6 @@ bool ContextImpl::matchSubjectAltName(
 
 bool ContextImpl::verifySubjectAltName(X509* cert,
                                        const std::vector<std::string>& subject_alt_names) {
-  X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr);
   bssl::UniquePtr<GENERAL_NAMES> san_names(
       static_cast<GENERAL_NAMES*>(X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr)));
   if (san_names == nullptr) {
