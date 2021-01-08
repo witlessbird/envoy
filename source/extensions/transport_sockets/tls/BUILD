@@ -56,10 +56,7 @@ envoy_cc_library(
 #    name = "io_handle_bio_lib",
 #    srcs = ["io_handle_bio.cc"],
 #    hdrs = ["io_handle_bio.h"],
-#    external_deps = [
-#	"ssl",
-#	"openssl_includes_lib",
-#	],
+#    external_deps = ["ssl"],
 #    deps = [
 #        "//include/envoy/buffer:buffer_interface",
 #        "//include/envoy/network:io_handle_interface",
