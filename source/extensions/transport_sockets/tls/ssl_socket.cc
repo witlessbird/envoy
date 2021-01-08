@@ -8,7 +8,8 @@
 #include "common/http/headers.h"
 #include "common/runtime/runtime_features.h"
 
-#include "extensions/transport_sockets/tls/io_handle_bio.h"
+// TODO (dmitri-d) re-enable when BIO io_handle method has been ported to OpenSSL
+//#include "extensions/transport_sockets/tls/io_handle_bio.h"
 #include "extensions/transport_sockets/tls/ssl_handshaker.h"
 #include "extensions/transport_sockets/tls/utility.h"
 
@@ -72,13 +73,14 @@ void SslSocket::setTransportSocketCallbacks(Network::TransportSocketCallbacks& c
   }
 
   BIO* bio;
-  if (Runtime::runtimeFeatureEnabled("envoy.reloadable_features.tls_use_io_handle_bio")) {
+  // TODO (dmitri-d) re-enable BIO_new_io_handle once ported to OpenSSL
+  //if (Runtime::runtimeFeatureEnabled("envoy.reloadable_features.tls_use_io_handle_bio")) {
     // Use custom BIO that reads from/writes to IoHandle
-    bio = BIO_new_io_handle(&callbacks_->ioHandle());
-  } else {
+  //  bio = BIO_new_io_handle(&callbacks_->ioHandle());
+  //} else {
     // TODO(fcoras): remove once the io_handle_bio proves to be stable
     bio = BIO_new_socket(callbacks_->ioHandle().fdDoNotUse(), 0);
-  }
+  //}
   SSL_set_bio(rawSsl(), bio, bio);
 }
 
