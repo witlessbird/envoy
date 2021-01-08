@@ -9,7 +9,8 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
-#include "openssl/bytestring.h"
+#include "opensslcbs/cbs.h"
+//#include "openssl/bytestring.h"
 #include "openssl/ssl.h"
 
 /**
