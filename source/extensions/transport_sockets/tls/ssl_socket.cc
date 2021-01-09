@@ -142,6 +142,7 @@ Network::IoResult SslSocket::doRead(Buffer::Instance& read_buffer) {
         case SSL_ERROR_WANT_READ:
           break;
         case SSL_ERROR_ZERO_RETURN:
+	  // Graceful shutdown using close_notify TLS alert.
           end_stream = true;
           break;
         case SSL_ERROR_SYSCALL:
@@ -395,7 +396,8 @@ ServerSslSocketFactory::createTransportSocket(Network::TransportSocketOptionsSha
     ssl_ctx = ssl_ctx_;
   }
   if (ssl_ctx) {
-    return std::make_unique<SslSocket>(std::move(ssl_ctx), InitialState::Server, nullptr);
+    return std::make_unique<SslSocket>(std::move(ssl_ctx), InitialState::Server, nullptr,
+                                       config_->createHandshaker());
   } else {
     ENVOY_LOG(debug, "Create NotReadySslSocket");
     stats_.downstream_context_secrets_not_ready_.inc();

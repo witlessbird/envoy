@@ -12,8 +12,7 @@
 #include "absl/types/optional.h"
 #include "absl/types/variant.h"
 #include "openssl/bn.h"
-#include "opensslcbs/cbs.h"
-//#include "openssl/bytestring.h"
+#include "openssl/bytestring.h"
 #include "openssl/ssl.h"
 
 namespace Envoy {
