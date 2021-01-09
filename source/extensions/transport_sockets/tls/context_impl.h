@@ -19,7 +19,6 @@
 
 #include "extensions/transport_sockets/tls/context_manager_impl.h"
 #include "extensions/transport_sockets/tls/openssl_impl.h"
-#include "extensions/transport_sockets/tls/ocsp/ocsp.h"
 
 #include "absl/synchronization/mutex.h"
 #include "absl/types/optional.h"
@@ -35,6 +34,11 @@ namespace Envoy {
 namespace Extensions {
 namespace TransportSockets {
 namespace Tls {
+
+namespace Ocsp {
+  class OcspResponseWrapper {};
+  using OcspResponseWrapperPtr = std::unique_ptr<OcspResponseWrapper>;
+}
 
 #define ALL_SSL_STATS(COUNTER, GAUGE, HISTOGRAM)                                                   \
   COUNTER(connection_error)                                                                        \
@@ -106,8 +110,9 @@ public:
   size_t daysUntilFirstCertExpires() const override;
   Envoy::Ssl::CertificateDetailsPtr getCaCertInformation() const override;
   std::vector<Envoy::Ssl::CertificateDetailsPtr> getCertChainInformation() const override;
-  absl::optional<uint64_t> secondsUntilFirstOcspResponseExpires() const override;
-
+  absl::optional<uint64_t> secondsUntilFirstOcspResponseExpires() const override {
+    return absl::nullopt;
+  }
   std::vector<Ssl::PrivateKeyMethodProviderSharedPtr> getPrivateKeyMethodProviders();
 
   bool verifyCertChain(X509& leaf_cert, STACK_OF(X509) & intermediates, std::string& error_details);
@@ -259,11 +264,6 @@ private:
                          unsigned int inlen);
   int sessionTicketProcess(SSL* ssl, uint8_t* key_name, uint8_t* iv, EVP_CIPHER_CTX* ctx,
                            HMAC_CTX* hmac_ctx, int encrypt);
-  bool isClientEcdsaCapable(const SSL_CLIENT_HELLO* ssl_client_hello);
-  bool isClientOcspCapable(const SSL_CLIENT_HELLO* ssl_client_hello);
-  // Select the TLS certificate context in SSL_CTX_set_select_certificate_cb() callback with
-  // ClientHello details.
-  enum ssl_select_cert_result_t selectTlsContext(const SSL_CLIENT_HELLO* ssl_client_hello);
   OcspStapleAction ocspStapleAction(const ServerContextImpl::TlsContext& ctx,
                                     bool client_ocsp_capable);
 

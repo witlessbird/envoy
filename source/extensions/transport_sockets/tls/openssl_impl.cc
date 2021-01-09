@@ -97,15 +97,6 @@ void allowRenegotiation(SSL* ssl) {
   // SSL_set_renegotiate_mode(ssl, mode);
 }
 
-bssl::UniquePtr<STACK_OF(X509_NAME)> initX509Names() {
-  bssl::UniquePtr<STACK_OF(X509_NAME)> list(
-      sk_X509_NAME_new([](const X509_NAME* const* a, const X509_NAME* const* b) -> int {
-        return X509_NAME_cmp(*a, *b);
-      }));
-
-  return list;
-}
-
 EVP_MD_CTX* newEVP_MD_CTX() {
   EVP_MD_CTX* md(EVP_MD_CTX_new());
   return md;
@@ -125,17 +116,6 @@ int ssl_session_to_bytes(const SSL_SESSION* in, uint8_t** out_data, size_t* out_
   *out_len = 1;
 
   return 1;
-}
-
-X509* getVerifyCallbackCert(X509_STORE_CTX* store_ctx, void* arg) {
-
-  X509* x509 = X509_STORE_CTX_get_current_cert(store_ctx);
-
-  if (x509 == nullptr) {
-    x509 = X509_STORE_CTX_get0_cert(store_ctx);
-  }
-
-  return x509;
 }
 
 void ssl_ctx_add_client_CA(SSL_CTX* ctx, X509* x) { SSL_CTX_add_client_CA(ctx, x); }

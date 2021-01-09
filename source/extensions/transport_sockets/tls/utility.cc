@@ -69,7 +69,7 @@ inline bssl::UniquePtr<ASN1_TIME> currentASN1_Time(TimeSource& time_source) {
 }
 
 std::string Utility::getSerialNumberFromCertificate(X509& cert) {
-  ASN1_INTEGER* serial_number = X509_get_serialNumber(cert);
+  ASN1_INTEGER* serial_number = X509_get_serialNumber(&cert);
   BIGNUM* num_bn(BN_new());
   ASN1_INTEGER_to_BN(serial_number, num_bn);
   char* char_serial_number = BN_bn2hex(num_bn);
@@ -156,7 +156,7 @@ int32_t Utility::getDaysUntilExpiration(const X509* cert, TimeSource& time_sourc
   return 0;
 }
 
-absl::string_view Utility::getCertificateExtensionValue(X509& cert,
+absl::string_view Utility::getCertificateExtensionValue(const X509& cert,
                                                         absl::string_view extension_name) {
   bssl::UniquePtr<ASN1_OBJECT> oid(
       OBJ_txt2obj(std::string(extension_name).c_str(), 1 /* don't search names */));
