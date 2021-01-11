@@ -364,13 +364,6 @@ envoy_cc_library(
     ],
 )
 
-genrule(
-    name = "generate_version_number",
-    srcs = ["//:VERSION"],
-    outs = ["version_number.h"],
-    cmd = """echo "#define BUILD_VERSION_NUMBER \\"$$(cat $<)\\"" >$@""",
-)
-
 envoy_cc_library(
     name = "callback_impl_lib",
     hdrs = ["callback_impl.h"],
