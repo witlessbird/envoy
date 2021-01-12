@@ -61,14 +61,14 @@ int set_strict_cipher_list(SSL_CTX* ctx, const char* str) {
     }
 
     if (!found && str1.compare("-ALL") && str1.compare("ALL")) {
-      delete dup;
+      free(dup);
       return 0;
     }
 
     token = std::strtok(NULL, ":[]|");
   }
 
-  delete dup;
+  free(dup);
   return 1;
 }
 
