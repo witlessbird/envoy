@@ -77,10 +77,12 @@ INSTANTIATE_TEST_SUITE_P(CipherSuites, SslLibraryCipherSuiteSupport,
 // knownCipherSuites() so that this test can detect if they are removed in the future.
 TEST_F(SslLibraryCipherSuiteSupport, CipherSuitesNotAdded) {
   bssl::UniquePtr<SSL_CTX> ctx(SSL_CTX_new(TLS_method()));
-  EXPECT_NE(0, SSL_CTX_set_strict_cipher_list(ctx.get(), "ALL"));
+  EXPECT_NE(0, set_strict_cipher_list(ctx.get(), "ALL"));
 
+  STACK_OF(SSL_CIPHER)* ciphers = SSL_CTX_get_ciphers(ctx.get());
   std::vector<std::string> present_cipher_suites;
-  for (const SSL_CIPHER* cipher : SSL_CTX_get_ciphers(ctx.get())) {
+  for (int i = 0; i < sk_SSL_CIPHER_num(ciphers); i++) {
+    const SSL_CIPHER* cipher = sk_SSL_CIPHER_value(ciphers, i);
     present_cipher_suites.push_back(SSL_CIPHER_get_name(cipher));
   }
   EXPECT_THAT(present_cipher_suites, testing::IsSubsetOf(knownCipherSuites()));
@@ -91,7 +93,7 @@ TEST_F(SslLibraryCipherSuiteSupport, CipherSuitesNotAdded) {
 // cause previously loadable configurations to no longer load if they reference the cipher suite.
 TEST_P(SslLibraryCipherSuiteSupport, CipherSuitesNotRemoved) {
   bssl::UniquePtr<SSL_CTX> ctx(SSL_CTX_new(TLS_method()));
-  EXPECT_NE(0, SSL_CTX_set_strict_cipher_list(ctx.get(), GetParam().c_str()));
+  EXPECT_NE(0, set_strict_cipher_list(ctx.get(), GetParam().c_str()));
 }
 
 class SslContextImplTest : public SslCertsTest {

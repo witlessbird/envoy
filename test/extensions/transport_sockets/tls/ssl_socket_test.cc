@@ -33,7 +33,6 @@
 #include "test/extensions/transport_sockets/tls/test_data/san_dns_cert_info.h"
 #include "test/extensions/transport_sockets/tls/test_data/san_uri_cert_info.h"
 #include "test/extensions/transport_sockets/tls/test_data/selfsigned_ecdsa_p256_cert_info.h"
-#include "test/extensions/transport_sockets/tls/test_private_key_method_provider.h"
 #include "test/mocks/buffer/mocks.h"
 #include "test/mocks/init/mocks.h"
 #include "test/mocks/local_info/mocks.h"
@@ -354,7 +353,7 @@ void testUtil(const TestUtilOptions& options) {
   if (options.ocspStaplingEnabled()) {
     const SslHandshakerImpl* ssl_socket =
         dynamic_cast<const SslHandshakerImpl*>(client_connection->ssl().get());
-    SSL_enable_ocsp_stapling(ssl_socket->ssl());
+    //SSL_enable_ocsp_stapling(ssl_socket->ssl());
   }
 
   Network::MockConnectionCallbacks client_connection_callbacks;
@@ -441,14 +440,16 @@ void testUtil(const TestUtilOptions& options) {
                   server_connection->ssl()->urlEncodedPemEncodedPeerCertificateChain());
       }
 
-      const SslHandshakerImpl* ssl_socket =
-          dynamic_cast<const SslHandshakerImpl*>(client_connection->ssl().get());
-      SSL* client_ssl_socket = ssl_socket->ssl();
-      const uint8_t* response_head;
-      size_t response_len;
-      SSL_get0_ocsp_response(client_ssl_socket, &response_head, &response_len);
-      std::string ocsp_response{reinterpret_cast<const char*>(response_head), response_len};
-      EXPECT_EQ(options.expectedOcspResponse(), ocsp_response);
+      // TODO (dmitri-d) certificate stapling is disabled under OpenSSL atm
+      // 
+      //const SslHandshakerImpl* ssl_socket =
+      //    dynamic_cast<const SslHandshakerImpl*>(client_connection->ssl().get());
+      //SSL* client_ssl_socket = ssl_socket->ssl();
+      //const uint8_t* response_head;
+      //size_t response_len;
+      //SSL_get0_ocsp_response(client_ssl_socket, &response_head, &response_len);
+      //std::string ocsp_response{reinterpret_cast<const char*>(response_head), response_len};
+      //EXPECT_EQ(options.expectedOcspResponse(), ocsp_response);
 
       // By default, the session is not created with session resumption. The
       // client should see a session ID but the server should not.
@@ -656,8 +657,7 @@ const std::string testUtilV2(const TestUtilOptionsV2& options) {
     SSL* client_ssl_socket = ssl_socket->ssl();
     SSL_CTX* client_ssl_context = SSL_get_SSL_CTX(client_ssl_socket);
     SSL_SESSION* client_ssl_session =
-        SSL_SESSION_from_bytes(reinterpret_cast<const uint8_t*>(options.clientSession().data()),
-                               options.clientSession().size(), client_ssl_context);
+        ssl_session_from_bytes(client_ssl_socket, client_ssl_context, options.clientSession());
     int rc = SSL_set_session(client_ssl_socket, client_ssl_session);
     ASSERT(rc == 1);
     SSL_SESSION_free(client_ssl_session);
@@ -732,7 +732,7 @@ const std::string testUtilV2(const TestUtilOptionsV2& options) {
       // EXPECT_TRUE(SSL_SESSION_is_resumable(client_ssl_session));
       uint8_t* session_data;
       size_t session_len;
-      int rc = SSL_SESSION_to_bytes(client_ssl_session, &session_data, &session_len);
+      int rc = ssl_session_to_bytes(client_ssl_session, &session_data, &session_len);
       ASSERT(rc == 1);
       new_session = std::string(reinterpret_cast<char*>(session_data), session_len);
       OPENSSL_free(session_data);
@@ -1129,7 +1129,7 @@ TEST_P(SslSocketTest, MultiCertPreferEcdsa) {
         - ECDHE-RSA-AES128-GCM-SHA256
       validation_context:
         verify_certificate_hash: )EOF",
-                                                   TEST_SELFSIGNED_ECDSA_P256_CERT_HASH);
+                                                   TEST_SELFSIGNED_ECDSA_P256_CERT_256_HASH);
 
   const std::string server_ctx_yaml = R"EOF(
   common_tls_context:
