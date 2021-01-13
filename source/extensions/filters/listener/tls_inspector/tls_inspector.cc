@@ -231,6 +231,10 @@ ParseState Filter::parseClientHello(const void* data, size_t len) {
 
 std::vector<absl::string_view> Filter::getAlpnProtocols(const unsigned char* data, unsigned int len) {
   std::vector<absl::string_view> protocols;
+  if (len == 0) {
+    return protocols;
+  }
+
   absl::string_view str(reinterpret_cast<const char*>(data));
   for (int i = 0; i < len;) {
     uint32_t protocol_length = 0;
